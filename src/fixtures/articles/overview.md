@@ -2,6 +2,7 @@
 
 ### Intro
 RemotePass provides a REST API to build connections and exchange data with 3rd parties.
+For security, include the `x-api-key` header in every request.
 
 ### Overview
 RemotePass API is built around REST API architecture. In order to provide flexibility for our customers and allow working in test mode, RemotePass provides two environments — production and sandbox.

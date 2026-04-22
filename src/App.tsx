@@ -1,93 +1,18 @@
-import { useQuery } from "@tanstack/react-query";
-import { ApiReferenceReact } from "@scalar/api-reference-react";
+import {useQuery} from "@tanstack/react-query";
+import {ApiReferenceReact} from "@scalar/api-reference-react";
 import "@scalar/api-reference-react/style.css";
-import { getDocs } from "@/fixtures/endpoints";
+import {getDocs} from "@/fixtures/endpoints";
+import {createRemotePassTheme} from "@/fixtures/theme.ts";
 
-const REMOTEPASS_THEME = `
-  :root {
-    /* Typography */
-    --scalar-font: 'Mulish', system-ui, -apple-system, sans-serif;
-    --scalar-font-code: 'JetBrains Mono', 'Fira Code', ui-monospace, monospace;
+const API_KEY_SECURITY_SCHEME_NAME = "ApiKeyAuth";
 
-    /* Brand accent */
-    --scalar-color-accent: #114ef7;
-
-    /* Text hierarchy */
-    --scalar-color-1: #121212;
-    --scalar-color-2: #474747;
-    --scalar-color-3: #808080;
-    --scalar-color-ghost: #999999;
-
-    /* Backgrounds */
-    --scalar-background-1: #ffffff;
-    --scalar-background-2: #f7f7f7;
-    --scalar-background-3: #f1f1f1;
-    --scalar-background-4: #ebebeb;
-    --scalar-background-accent: rgba(17, 78, 247, 0.06);
-
-    /* Borders */
-    --scalar-border-color: #ebebeb;
-    --scalar-border-width: 1px;
-
-    /* Border radius */
-    --scalar-radius: 8px;
-    --scalar-radius-lg: 12px;
-    --scalar-radius-xl: 16px;
-
-    /* Sidebar */
-    --scalar-sidebar-background-1: #f7f7f7;
-    --scalar-sidebar-color-1: #121212;
-    --scalar-sidebar-color-2: #474747;
-    --scalar-sidebar-color-active: #114ef7;
-    --scalar-sidebar-border-color: #ebebeb;
-    --scalar-sidebar-item-active-background: rgba(17, 78, 247, 0.08);
-    --scalar-sidebar-item-hover-background: rgba(0, 0, 0, 0.04);
-    --scalar-sidebar-item-hover-color: #121212;
-    --scalar-sidebar-search-background: #ffffff;
-    --scalar-sidebar-search-border-color: #d9d9d9;
-
-    /* Semantic colors */
-    --scalar-color-green: #008033;
-    --scalar-color-red: #de2626;
-    --scalar-color-orange: #eb5004;
-    --scalar-color-blue: #1b80de;
-    --scalar-color-yellow: #b78f00;
-    --scalar-color-purple: #710899;
-
-    /* Scrollbar */
-    --scalar-scrollbar-color: rgba(0, 0, 0, 0.12);
-    --scalar-scrollbar-color-active: rgba(0, 0, 0, 0.24);
-  }
-
-  /* ── Sidebar logo ── */
-  .sidebar-pages::before {
-    content: '';
-    display: block;
-    flex-shrink: 0;
-    height: 22px;
-    margin: 16px 6px 14px;
-    background-image: url('/logo.svg');
-    background-repeat: no-repeat;
-    background-position: left center;
-    background-size: auto 22px;
-  }
-
-  /* ── Welcome screen: replace circular Scalar icon with RemotePass icon ── */
-  .start-logo {
-    width: 80px !important;
-    height: 80px !important;
-    aspect-ratio: 1 !important;
-    border-radius: 20px !important;
-    background-color: #ffffff !important;
-    background-image: url('/icon.svg') !important;
-    background-repeat: no-repeat !important;
-    background-size: 52px auto !important;
-    background-position: center !important;
-  }
-  .start-logo svg {
-    display: none !important;
-  }
-`;
+const REMOTEPASS_THEME = createRemotePassTheme({
+  logoUrl: `${import.meta.env.BASE_URL}logo.svg`,
+  darkLogoUrl: `${import.meta.env.BASE_URL}logo-dark.svg`,
+  iconUrl: `${import.meta.env.BASE_URL}icon.svg`,
+  gettingStartedIconUrl: `${import.meta.env.BASE_URL}sidebar-getting-started.svg`,
+  apiReferenceIconUrl: `${import.meta.env.BASE_URL}sidebar-api-reference.svg`,
+});
 
 function LoadingScreen() {
   return (
@@ -131,16 +56,29 @@ export default function App() {
     <ApiReferenceReact
       configuration={{
         spec: { content: data },
-        theme: "default",
+        theme: "kepler",
+        hideModels: true,
         layout: "modern",
-        darkMode: false,
+        darkMode: true,
+        forceDarkModeState: "dark",
+        hideDarkModeToggle: true,
         showSidebar: true,
         hideDownloadButton: false,
-        customCss: REMOTEPASS_THEME,
-        metaData: {
-          title: "RemotePass API Reference",
+        authentication: {
+          preferredSecurityScheme: API_KEY_SECURITY_SCHEME_NAME,
+          securitySchemes: {
+            [API_KEY_SECURITY_SCHEME_NAME]: {
+              type: "apiKey",
+              in: "header",
+              name: "x-api-key",
+              value: "",
+              description: "API key used to authorize requests.",
+            },
+          },
         },
-      }}
+        customCss: REMOTEPASS_THEME,
+        metaData: { title: "RemotePass API Reference" },
+      } as never}
     />
   );
 }

@@ -1,8 +1,8 @@
 import { capitalize, keys, merge, pick, set } from "lodash";
-import manifestData from "../../guides/manifest.json";
-import overviewMd from "../../guides/getting-started/overview.md?raw";
-import authorizationMd from "../../guides/getting-started/authorization.md?raw";
-import basicUsageMd from "../../guides/api-usage/basic-usage.md?raw";
+import manifestData from "../fixtures/articles/manifest.json";
+import overviewMd from "../fixtures/articles/overview.md?raw";
+import authorizationMd from "../fixtures/articles/authorization.md?raw";
+import basicUsageMd from "../fixtures/articles/basic-usage.md?raw";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type OpenAPIObject = Record<string, any>;
@@ -29,8 +29,18 @@ const excludes = [
   "/openapi/contract/v1/status",
   "/openapi/contract/v1/attribute",
 ];
+const API_KEY_HEADER_NAME = "x-api-key";
+const API_KEY_SECURITY_SCHEME_NAME = "ApiKeyAuth";
+const API_KEY_INTRO_TEXT =
+  "For security, include the `x-api-key` header in every request.";
 
 const guideContents: Record<string, string> = {
+  "./overview.md": overviewMd,
+  "./authorization.md": authorizationMd,
+  "./basic-usage.md": basicUsageMd,
+  "overview.md": overviewMd,
+  "authorization.md": authorizationMd,
+  "basic-usage.md": basicUsageMd,
   "getting-started/overview.md": overviewMd,
   "getting-started/authorization.md": authorizationMd,
   "api-usage/basic-usage.md": basicUsageMd,
@@ -39,21 +49,66 @@ const guideContents: Record<string, string> = {
 const articleTags = manifestData.folders.flatMap((folder) =>
   folder.pages.map((page) => ({
     name: page.name,
-    description: guideContents[page.file] ?? "",
+    description:
+      guideContents[page.file] ??
+      guideContents[`${folder.id}/${page.file.replace(/^\.\//, "")}`] ??
+      "",
   }))
 );
+
+const ensureApiKeySecurity = (security: unknown): OpenAPIObject[] => {
+  const securityEntries = Array.isArray(security)
+    ? (security.filter(
+        (entry): entry is OpenAPIObject =>
+          Boolean(entry) && typeof entry === "object" && !Array.isArray(entry)
+      ) as OpenAPIObject[])
+    : [];
+
+  if (
+    securityEntries.some((entry) =>
+      Object.prototype.hasOwnProperty.call(entry, API_KEY_SECURITY_SCHEME_NAME)
+    )
+  ) {
+    return securityEntries;
+  }
+
+  return [...securityEntries, { [API_KEY_SECURITY_SCHEME_NAME]: [] }];
+};
+
+const normalizeOperationParameters = (parameters: unknown): OpenAPIObject[] => {
+  const normalized: OpenAPIObject[] = [];
+  const seen = new Set<string>();
+
+  for (const parameter of Array.isArray(parameters) ? parameters : []) {
+    if (!parameter || typeof parameter !== "object") continue;
+
+    const parameterObject = parameter as OpenAPIObject;
+    const parameterIn = String(parameterObject.in ?? "").toLowerCase();
+    const parameterName = String(parameterObject.name ?? "").toLowerCase();
+
+    // API key auth is represented via security schemes, not duplicated as manual header params.
+    if (
+      parameterIn === "header" &&
+      (parameterName === "x-company-id" || parameterName === API_KEY_HEADER_NAME)
+    ) {
+      continue;
+    }
+
+    const dedupeKey = `${parameterIn}:${parameterName}`;
+    if (seen.has(dedupeKey)) continue;
+
+    seen.add(dedupeKey);
+    normalized.push(parameterObject);
+  }
+
+  return normalized;
+};
 
 const transformOperation = (
   operation: OpenAPIObject,
   api: string
 ): OpenAPIObject => {
-  set(
-    operation,
-    "parameters",
-    (operation.parameters ?? []).map((p: OpenAPIObject) =>
-      p?.name === "x-company-id" ? { ...p, name: "x-api-key" } : p
-    )
-  );
+  set(operation, "parameters", normalizeOperationParameters(operation.parameters));
 
   const firstTag: string = operation?.tags?.[0] ?? "";
   if (["Country", "Currency"].includes(firstTag)) {
@@ -61,6 +116,8 @@ const transformOperation = (
   } else {
     set(operation, "tags", [capitalize(api)]);
   }
+
+  set(operation, "security", ensureApiKeySecurity(operation.security));
 
   return operation;
 };
@@ -95,6 +152,10 @@ const fetchApiDocs = async (api: string): Promise<OpenAPIObject> => {
 export const getDocs = async (): Promise<OpenAPIObject> => {
   const results = await Promise.all(apis.map(fetchApiDocs));
   const merged: OpenAPIObject = merge({}, ...results);
+  const mergedDescription = String(merged?.info?.description ?? "").trim();
+  const infoDescription = /x-api-key/i.test(mergedDescription)
+    ? mergedDescription
+    : [mergedDescription, API_KEY_INTRO_TEXT].filter(Boolean).join("\n\n");
 
   const filteredPaths = pick(
     merged.paths,
@@ -105,9 +166,26 @@ export const getDocs = async (): Promise<OpenAPIObject> => {
 
   return {
     ...merged,
-    info: { ...merged.info, title: "RemotePass API" },
+    info: {
+      ...merged.info,
+      title: "RemotePass API",
+      description: infoDescription,
+    },
     servers,
     paths: filteredPaths,
+    components: {
+      ...(merged.components ?? {}),
+      securitySchemes: {
+        ...(merged?.components?.securitySchemes ?? {}),
+        [API_KEY_SECURITY_SCHEME_NAME]: {
+          type: "apiKey",
+          in: "header",
+          name: API_KEY_HEADER_NAME,
+          description: "API key used to authorize requests.",
+        },
+      },
+    },
+    security: ensureApiKeySecurity(merged.security),
     tags: [
       ...articleTags,
       ...(Array.isArray(merged.tags)
@@ -117,10 +195,10 @@ export const getDocs = async (): Promise<OpenAPIObject> => {
         : []),
     ],
     "x-tagGroups": [
-      {
-        name: "Guides",
-        tags: manifestData.folders.flatMap((f) => f.pages.map((p) => p.name)),
-      },
+      ...manifestData.folders.map((folder) => ({
+        name: folder.name,
+        tags: folder.pages.map((p) => p.name),
+      })),
       {
         name: "API Reference",
         tags: ["Users", "Contract", "Expense", "Timeoff", "Collections"],

@@ -7,23 +7,17 @@
         {
           "id": "overview",
           "name": "API Overview",
-          "file": "getting-started/overview.md"
+          "file": "./overview.md"
         },
         {
           "id": "authorization",
           "name": "Authorization",
-          "file": "getting-started/authorization.md"
-        }
-      ]
-    },
-    {
-      "id": "api-usage",
-      "name": "API Usage",
-      "pages": [
+          "file": "./authorization.md"
+        },
         {
           "id": "basic-usage",
           "name": "Basic Usage",
-          "file": "api-usage/basic-usage.md"
+          "file": "./basic-usage.md"
         }
       ]
     }
