@@ -1,5 +1,8 @@
 import { capitalize, keys, merge, pick, set } from "lodash";
 import manifestData from "../../guides/manifest.json";
+import overviewMd from "../../guides/getting-started/overview.md?raw";
+import authorizationMd from "../../guides/getting-started/authorization.md?raw";
+import basicUsageMd from "../../guides/api-usage/basic-usage.md?raw";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type OpenAPIObject = Record<string, any>;
@@ -27,21 +30,16 @@ const excludes = [
   "/openapi/contract/v1/attribute",
 ];
 
-const markdownFiles = import.meta.glob("../../guides/**/*.md", {
-  query: "?raw",
-  import: "default",
-  eager: true,
-}) as Record<string, string>;
-
-function getMarkdown(file: string): string {
-  const key = Object.keys(markdownFiles).find((k) => k.endsWith(file));
-  return key ? markdownFiles[key] : "";
-}
+const guideContents: Record<string, string> = {
+  "getting-started/overview.md": overviewMd,
+  "getting-started/authorization.md": authorizationMd,
+  "api-usage/basic-usage.md": basicUsageMd,
+};
 
 const articleTags = manifestData.folders.flatMap((folder) =>
   folder.pages.map((page) => ({
     name: page.name,
-    description: getMarkdown(page.file),
+    description: guideContents[page.file] ?? "",
   }))
 );
 
