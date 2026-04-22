@@ -1,0 +1,57 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+}
+
+.status-screen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  gap: 14px;
+  font-family: system-ui, sans-serif;
+  color: #6b7280;
+}
+
+.status-screen.error {
+  color: #ef4444;
+}
+
+.spinner {
+  width: 38px;
+  height: 38px;
+  border: 3px solid #e5e7eb;
+  border-top-color: #6366f1;
+  border-radius: 50%;
+  animation: spin 0.75s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.error-icon {
+  font-size: 28px;
+}
+
+.error-title {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.error-message {
+  font-size: 13px;
+  color: #9ca3af;
+}
