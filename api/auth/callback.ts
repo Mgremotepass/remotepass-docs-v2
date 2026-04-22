@@ -15,20 +15,17 @@ export default async function handler(request: Request): Promise<Response> {
       Accept: "application/json",
     },
     body: JSON.stringify({
-      client_id: process.env.GITHUB_CLIENT_ID,
+      client_id: process.env.VITE_GITHUB_CLIENT_ID,
       client_secret: process.env.GITHUB_CLIENT_SECRET,
       code,
     }),
   });
 
-  if (!tokenRes.ok) {
-    return new Response("Token exchange failed", { status: 502 });
-  }
+  const data = (await tokenRes.json()) as { access_token?: string; error?: string; error_description?: string };
 
-  const data = (await tokenRes.json()) as { access_token?: string; error?: string };
-
-  if (!data.access_token) {
-    return new Response(`OAuth error: ${data.error ?? "unknown"}`, { status: 400 });
+  if (!tokenRes.ok || !data.access_token) {
+    const reason = data.error_description ?? data.error ?? `HTTP ${tokenRes.status}`;
+    return new Response(`Token exchange failed: ${reason}`, { status: 502 });
   }
 
   const redirect = new URL("/editor", url.origin);
