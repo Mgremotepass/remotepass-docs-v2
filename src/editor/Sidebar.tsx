@@ -114,7 +114,7 @@ function SortableFolderItem({
 }: SortableFolderItemProps) {
   const [renamingFolder, setRenamingFolder] = useState(false);
   const [expanded, setExpanded] = useState(true);
-  const sensors = useSensors(useSensor(PointerSensor));
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
 
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: folder.id });
   const style = { transform: CSS.Transform.toString(transform), transition };
@@ -148,7 +148,7 @@ function SortableFolderItem({
         />
       </div>
       {expanded && (
-        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handlePageDragEnd}>
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handlePageDragEnd} autoScroll={false}>
           <SortableContext
             items={folder.pages.map((p) => `${folder.id}::${p.id}`)}
             strategy={verticalListSortingStrategy}
@@ -186,7 +186,7 @@ export function Sidebar({
   onReorderFolders,
   onReorderPages,
 }: SidebarProps) {
-  const sensors = useSensors(useSensor(PointerSensor));
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
 
   function handleFolderDragEnd(event: DragEndEvent) {
     const { active, over } = event;
