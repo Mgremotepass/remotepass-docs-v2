@@ -114,6 +114,11 @@ export const createRemotePassTheme = ({
     background-image: url('${apiReferenceIconUrl}');
   }
 
+  /* Hide Scalar branding/footer row */
+  .darklight-reference {
+    display: none !important;
+  }
+
   /* Welcome screen: replace circular Scalar icon with RemotePass icon */
   .start-logo {
     width: 80px !important;

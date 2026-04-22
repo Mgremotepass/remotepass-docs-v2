@@ -64,6 +64,7 @@ export default function App() {
         hideDarkModeToggle: true,
         showSidebar: true,
         hideDownloadButton: false,
+        hideClientButton: true,
         authentication: {
           preferredSecurityScheme: API_KEY_SECURITY_SCHEME_NAME,
           securitySchemes: {
